@@ -11,6 +11,7 @@ lazy val postgresVersion = "42.2.2"
 lazy val cassandraVersion = "1.0.5"
 lazy val json4sVersion = "3.2.11"
 lazy val protobufVersion = "3.6.1"
+lazy val slickVersion = "3.3.3"
 
 // some libs are available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
@@ -25,6 +26,11 @@ libraryDependencies ++= Seq(
   // JDBC with PostgreSQL
   "org.postgresql" % "postgresql" % postgresVersion,
   "com.lightbend.akka" %% "akka-persistence-jdbc" % "5.0.1",
+
+ // Akka jdbc persistence dependencies
+  "com.typesafe.akka" %% "akka-persistence-query" % akkaVersion,
+  "com.typesafe.slick" %% "slick" % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp" % slickVersion,
 
   // Cassandra
   "com.typesafe.akka" %% "akka-persistence-cassandra" % cassandraVersion,
