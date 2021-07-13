@@ -4,10 +4,10 @@ version := "0.1"
 
 scalaVersion := "2.13.6"
 
-lazy val akkaVersion = "2.6.15" // must be 2.5.13 so that it's compatible with the stores plugins (JDBC and Cassandra)
-lazy val leveldbVersion = "0.7"
+lazy val akkaVersion = "2.6.10" // must be 2.5.13 so that it's compatible with the stores plugins (JDBC and Cassandra)
+lazy val leveldbVersion = "0.12"
 lazy val leveldbjniVersion = "1.8"
-lazy val postgresVersion = "42.2.2"
+lazy val postgresVersion = "42.2.23"
 lazy val cassandraVersion = "1.0.5"
 lazy val json4sVersion = "3.2.11"
 lazy val protobufVersion = "3.6.1"
@@ -34,6 +34,7 @@ libraryDependencies ++= Seq(
 
   // Cassandra
   "com.typesafe.akka" %% "akka-persistence-cassandra" % cassandraVersion,
+  "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % cassandraVersion % Test,
 
   // Google Protocol Buffers
