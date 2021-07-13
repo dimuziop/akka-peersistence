@@ -1,4 +1,4 @@
-name := "akka_persitence"
+name := "akka_persistence"
 
 version := "0.1"
 
