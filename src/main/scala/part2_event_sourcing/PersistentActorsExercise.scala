@@ -22,7 +22,7 @@ object PersistentActorsExercise extends App {
   case class Vote(citizenID: String, candidate: String)
 
   // Just for semantic accuracy
-  case class Pool(citizenID: String, candidate: String)
+  /*case class Pool(citizenID: String, candidate: String)*/
 
   class AntiDemocraticPoolingStation(stationNumber: Int) extends PersistentActor with ActorLogging {
 
@@ -33,13 +33,13 @@ object PersistentActorsExercise extends App {
     override def persistenceId: String = s"polling-station-$stationNumber"
 
     override def receiveCommand: Receive = {
-      case Vote(citizenID, candidate) =>
-        persist(Pool(citizenID, candidate)) { e =>
-          if (pooledCitizens.contains(citizenID)) cheatingCitizens + citizenID
+      case vote @ Vote(_, __) =>
+        persist(vote) { e =>
+          if (pooledCitizens.contains(e.citizenID)) cheatingCitizens + e.citizenID
           else {
-            pooledCitizens + citizenID
-            results = results + Tuple2(candidate, results.getOrElse[Int](candidate, 0) + 1)
-            log.info(s"Citizen $citizenID has voted $candidate")
+            pooledCitizens + e.citizenID
+            results = results + Tuple2(e.candidate, results.getOrElse[Int](e.candidate, 0) + 1)
+            log.info(s"Citizen ${e.citizenID} has voted ${e.candidate}")
             log.info(s"Partial results: ${stringifyResults(results)}")
           }
         }
@@ -53,12 +53,12 @@ object PersistentActorsExercise extends App {
     }
 
     override def receiveRecover: Receive = {
-      case Pool(citizenID, candidate) =>
-        if (pooledCitizens.contains(citizenID)) cheatingCitizens + citizenID
+      case vote @ Vote(_, __) => // COMMAND sourcing against EVENT sourcing
+        if (pooledCitizens.contains(vote.citizenID)) cheatingCitizens + vote.citizenID
       else {
-        pooledCitizens + citizenID
-        results = results + Tuple2(candidate, results.getOrElse[Int](candidate, 0) + 1)
-        log.info(s"Recover: Citizen $citizenID has voted $candidate")
+        pooledCitizens + vote.citizenID
+        results = results + Tuple2(vote.candidate, results.getOrElse[Int](vote.candidate, 0) + 1)
+        log.info(s"Recover: Citizen ${vote.citizenID} has voted ${vote.candidate}")
       }
     }
 
