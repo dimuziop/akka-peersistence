@@ -18,6 +18,8 @@ object PersistentActors extends App {
 
   // COMMANDS
   case class Invoice(recipient: String, date: Date, amount: Int)
+  case class InvoiceBulk(invoices: List[Invoice])
+  case class Shutdown()
 
   // EVENT
   case class InvoiceRecorded(id: Int, recipient: String, date: Date, amount: Int)
@@ -52,9 +54,27 @@ object PersistentActors extends App {
           sender() ! "PersistenceACK"
           log.info(s"Persisted $e as invoice #${e.id}, for a total amount $totalAmount")
         }
+      case InvoiceBulk(invoices) =>
+        /*
+        1) create events (Plural)
+        2) persist al events
+        3) update the actor state when each item persist
+         */
+        val invoicesIds = latestInvoiceId to (latestInvoiceId + invoices.size)
+        val events = invoices.zip(invoicesIds).map(pair => {
+          val id = pair._2
+          val invoice = pair._1
+          InvoiceRecorded(id, invoice.recipient, invoice.date, invoice.amount)
+        })
+        persistAll(events) { e =>
+          latestInvoiceId += 1
+          totalAmount += e.amount
+          log.info(s"Persisted SINGLE $e as invoice #${e.id}, for a total amount $totalAmount")
+        }
         // act like a normal actor
       case "print" =>
         log.info(s"Latest invoice #$latestInvoiceId, for a total amount $totalAmount")
+      case Shutdown => context.stop(self)
     }
 
     /**
@@ -69,6 +89,27 @@ object PersistentActors extends App {
         totalAmount += amount
         log.info(s"Revered invoice #$id for amount $amount | Total amount: $totalAmount")
     }
+
+    /*
+    This method is called if persistence failed
+    The actor will be STOPPED
+
+    Best practice: start the actor again after a while
+    (use Backoff supervisor)
+     */
+    override def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
+      log.error(s"Fail to persist $event because of $cause")
+      super.onPersistFailure(cause, event, seqNr)
+    }
+
+    /*
+    Called if the JOURNAL fails to persist the event
+    The actor is RESUMED.
+     */
+    override def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
+      log.error(s"Persist rejected for $event because of $cause")
+      super.onPersistRejected(cause, event, seqNr)
+    }
   }
 
   val system = ActorSystem("PersistentActors")
@@ -77,5 +118,27 @@ object PersistentActors extends App {
   /*for (i <- 1 to 10) {
     accountant ! Invoice("The sofa company", new Date, i*1000)
   }*/
+  /*
+  Persistence failures
+   */
+
+  /*
+  Persisting Multiple Events
+  Persist All
+   */
+  val newInvoices = for(i <- 1 to 5) yield Invoice("The sofa company", new Date, i*1000)
+  accountant ! InvoiceBulk(newInvoices.toList)
+
+  /*
+  NEVER EVER CALL PERSIST OR PERSISTALL FROM FUTURES
+   */
+
+  /**
+   * Shutdown of persistent actors
+   * Best practice; Define your own shutdown messages
+   */
+  accountant ! Shutdown
+
+
 
 }
