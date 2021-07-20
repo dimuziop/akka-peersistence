@@ -12,6 +12,7 @@ lazy val cassandraVersion = "1.0.5"
 lazy val json4sVersion = "3.2.11"
 lazy val protobufVersion = "3.6.1"
 lazy val slickVersion = "3.3.3"
+lazy val scalaTestVersion = "3.2.9"
 
 // some libs are available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
@@ -36,6 +37,9 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-persistence-cassandra" % cassandraVersion,
   "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % cassandraVersion % Test,
+  // TEST TOOLS
+  "org.scalactic" %% "scalactic" % scalaTestVersion,
+  "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
 
   // Google Protocol Buffers
   "com.google.protobuf" % "protobuf-java"  % protobufVersion,
