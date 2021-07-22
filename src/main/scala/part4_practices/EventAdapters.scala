@@ -2,8 +2,10 @@ package part4_practices
 
 import akka.actor.{ActorLogging, ActorSystem, Props}
 import akka.persistence.PersistentActor
+import akka.persistence.journal.{EventSeq, ReadEventAdapter}
 import com.typesafe.config.ConfigFactory
 
+import java.util.UUID
 import scala.collection.mutable
 
 /**
@@ -42,10 +44,6 @@ object EventAdapters extends App {
     }
 
     override def receiveRecover: Receive = {
-      case GuitarAdded(id, model, make, quantity) =>
-        val guitar: Guitar = Guitar(id, model, make, ACOUSTIC)
-        updateInventory(guitar, quantity)
-        log.info(s"Recovered the $quantity x $guitar to inventory")
       case event @ GuitarAddedV2(id, model, make, quantity, guitarType) =>
         val guitar: Guitar = Guitar(id, model, make, guitarType)
         updateInventory(guitar, quantity)
@@ -58,11 +56,24 @@ object EventAdapters extends App {
     }
   }
 
+  class GuitarReadEventAdapter extends ReadEventAdapter {
+    /*
+    journal -> serializer -> read event adapter -> actor
+    (bytes) ->    GA      ->       GAV2       -> (receiveRecover)
+     */
+    override def fromJournal(event:  Any, manifest:  String): EventSeq = event match {
+      case GuitarAdded(id, model, make, quantity) =>
+        print("Running")
+        EventSeq.single(GuitarAddedV2(id, model, make, quantity, ACOUSTIC))
+      case other => EventSeq.single(other)
+    }
+}
+
   val system = ActorSystem("eventAdapters", ConfigFactory.load().getConfig("eventAdapters"))
   val inventoryManager = system.actorOf(Props[InventoryManager], "inventoryManager")
 
-  /*val guitars = for (i <- 1 to 10) yield Guitar(UUID.randomUUID().toString, s"JVMBlueSpecial $i", "Brian June")
-  guitars.foreach { guitar =>
+  val guitars = for (i <- 1 to 10) yield Guitar(UUID.randomUUID().toString, s"JVMBlueSpecial $i", "Brian June")
+  /*guitars.foreach { guitar =>
     inventoryManager ! AddGuitar(guitar, 5)
   }*/
 
